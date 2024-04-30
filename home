@@ -1,0 +1,249 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <limits.h>
+
+#define MAX_VERTICES 100
+#define INF INT_MAX
+
+// Structure to represent a vertex in the graph
+typedef struct Vertex {
+    char name[50];
+} Vertex;
+
+// Structure to represent an edge in the graph
+typedef struct Edge {
+    int to_vertex;
+    int price;
+    struct Edge* next;
+} Edge;
+
+// Structure to represent a graph
+typedef struct Graph {
+    Vertex vertices[MAX_VERTICES];
+    Edge* adjacency_list[MAX_VERTICES];
+    int vertex_count;
+} Graph;
+
+// Function to initialize the graph
+void init_graph(Graph* graph) {
+    graph->vertex_count = 0;
+    for (int i = 0; i < MAX_VERTICES; ++i) {
+        graph->adjacency_list[i] = NULL;
+    }
+}
+
+// Function to add a vertex to the graph
+void add_vertex(Graph* graph, char name[]) {
+    if (graph->vertex_count < MAX_VERTICES) {
+        Vertex vertex;
+        sprintf(vertex.name, "%s", name);
+        graph->vertices[graph->vertex_count++] = vertex;
+    } else {
+        printf("Cannot add more vertices. Maximum limit reached.\n");
+    }
+}
+
+// Function to add an edge to the graph
+void add_edge(Graph* graph, int from_vertex, int to_vertex, int price) {
+    Edge* new_edge = (Edge*)malloc(sizeof(Edge));
+    new_edge->to_vertex = to_vertex;
+    new_edge->price = price;
+    new_edge->next = graph->adjacency_list[from_vertex];
+    graph->adjacency_list[from_vertex] = new_edge;
+}
+
+// Function to find the vertex index by its name
+int find_vertex_index(Graph* graph, char name[]) {
+    for (int i = 0; i < graph->vertex_count; ++i) {
+        if (strcmp(graph->vertices[i].name, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Dijkstra's algorithm to find cheapest path from start_vertex to all other vertices
+void dijkstra(Graph* graph, int start_vertex, int prices[], int predecessors[]) {
+    bool visited[MAX_VERTICES] = {false};
+
+    // Initialize prices and predecessors
+    for (int i = 0; i < graph->vertex_count; ++i) {
+        prices[i] = INF;
+        predecessors[i] = -1;
+    }
+    prices[start_vertex] = 0;
+
+    // Main loop
+    for (int i = 0; i < graph->vertex_count; ++i) {
+        // Find the vertex with the minimum price
+        int min_price = INF;
+        int current_vertex = -1;
+        for (int j = 0; j < graph->vertex_count; ++j) {
+            if (!visited[j] && prices[j] < min_price) {
+                min_price = prices[j];
+                current_vertex = j;
+            }
+        }
+
+        // Mark the current vertex as visited
+        visited[current_vertex] = true;
+
+        // Update prices for adjacent vertices
+        Edge* edge = graph->adjacency_list[current_vertex];
+        while (edge != NULL) {
+            int neighbor_vertex = edge->to_vertex;
+            int edge_price = edge->price;
+            int total_price = prices[current_vertex] + edge_price;
+            if (total_price < prices[neighbor_vertex]) {
+                prices[neighbor_vertex] = total_price;
+                predecessors[neighbor_vertex] = current_vertex;
+            }
+            edge = edge->next;
+        }
+    }
+}
+
+// Function to calculate the fare along the cheapest path
+int calculate_fare(Graph* graph, int start_vertex, int end_vertex, int predecessors[]) {
+    int fare = 0;
+    int current_vertex = end_vertex;
+    while (current_vertex != start_vertex) {
+        int predecessor_vertex = predecessors[current_vertex];
+        Edge* edge = graph->adjacency_list[predecessor_vertex];
+        while (edge != NULL) {
+            if (edge->to_vertex == current_vertex) {
+                fare += edge->price;
+                break;
+            }
+            edge = edge->next;
+        }
+        current_vertex = predecessor_vertex;
+    }
+    return fare;
+}
+
+// Function to print the cheapest path from start_vertex to end_vertex
+void print_cheapest_path(Graph* graph, int start_vertex, int end_vertex, int predecessors[]) {
+    if (start_vertex == end_vertex) {
+        printf("%s ", graph->vertices[start_vertex].name);
+    } else if (predecessors[end_vertex] == -1) {
+        printf("No path from %s to %s\n", graph->vertices[start_vertex].name, graph->vertices[end_vertex].name);
+    } else {
+        print_cheapest_path(graph, start_vertex, predecessors[end_vertex], predecessors);
+        printf("->%s", graph->vertices[end_vertex].name);
+    }
+}
+
+int main() {
+    Graph graph;
+    init_graph(&graph);
+
+    // Add airports as vertices
+    add_vertex(&graph, "Delhi");
+    add_vertex(&graph, "Jammu");
+    add_vertex(&graph, "Jodhpur");
+    add_vertex(&graph, "Ahemdabad");
+    add_vertex(&graph, "Dehradun");
+    add_vertex(&graph, "Mumbai");
+    add_vertex(&graph, "Lucknow");
+    add_vertex(&graph, "Kolkata");
+    add_vertex(&graph, "Darbhanga");
+    add_vertex(&graph, "Guwahati");
+    add_vertex(&graph, "Imphal");
+    add_vertex(&graph, "Hyderabad");
+    add_vertex(&graph, "Bangalore");
+    add_vertex(&graph, "Chennai");
+    
+    
+
+    // Add routes as edges with prices
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Jammu"), 14500);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Jodhpur"), 5900);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Ahemdabad"), 5200);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Mumbai"), 4700);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Bangalore"), 8500);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Hyderabad"), 4300);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Chennai"), 4800);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Lucknow"), 3700);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Kolkata"), 5400);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Guwahati"), 9000);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Dehradun"), 2700);
+    add_edge(&graph, find_vertex_index(&graph, "Delhi"), find_vertex_index(&graph, "Imphal"), 21200);
+    add_edge(&graph, find_vertex_index(&graph, "Jammu"), find_vertex_index(&graph, "Ahemdabad"), 13000);
+    add_edge(&graph, find_vertex_index(&graph, "Jammu"), find_vertex_index(&graph, "Delhi"), 10600);
+    add_edge(&graph, find_vertex_index(&graph, "Jodhpur"), find_vertex_index(&graph, "Delhi"), 9900);
+    add_edge(&graph, find_vertex_index(&graph, "Jodhpur"), find_vertex_index(&graph, "Mumbai"), 16800);
+    add_edge(&graph, find_vertex_index(&graph, "Jodhpur"), find_vertex_index(&graph, "Bangalore"), 17000);
+    add_edge(&graph, find_vertex_index(&graph, "Jodhpur"), find_vertex_index(&graph, "Hyderabad"), 
+13600);
+    add_edge(&graph, find_vertex_index(&graph, "Jodhpur"), find_vertex_index(&graph, "Ahemdabad"), 6200);
+    add_edge(&graph, find_vertex_index(&graph, "Ahemdabad"), find_vertex_index(&graph, "Delhi"), 6300);
+    add_edge(&graph, find_vertex_index(&graph, "Ahemdabad"), find_vertex_index(&graph, "Mumbai"), 2300);
+    add_edge(&graph, find_vertex_index(&graph, "Ahemdabad"), find_vertex_index(&graph, "Bangalore"), 6800);
+    add_edge(&graph, find_vertex_index(&graph, "Ahemdabad"), find_vertex_index(&graph, "Jodhpur"), 3400);
+    add_edge(&graph, find_vertex_index(&graph, "Mumbai"), find_vertex_index(&graph, "Delhi"), 4900);
+    add_edge(&graph, find_vertex_index(&graph, "Mumbai"), find_vertex_index(&graph, "Ahemdabad"), 2500);
+    add_edge(&graph, find_vertex_index(&graph, "Mumbai"), find_vertex_index(&graph, "Bangalore"), 4200);
+    add_edge(&graph, find_vertex_index(&graph, "Mumbai"), find_vertex_index(&graph, "Chennai"), 4000);
+    add_edge(&graph, find_vertex_index(&graph, "Mumbai"), find_vertex_index(&graph, "Kolkata"), 6100);
+    add_edge(&graph, find_vertex_index(&graph, "Bangalore"), find_vertex_index(&graph, "Mumbai"), 4200);
+    add_edge(&graph, find_vertex_index(&graph, "Bangalore"), find_vertex_index(&graph, "Delhi"), 7000);
+    add_edge(&graph, find_vertex_index(&graph, "Bangalore"), find_vertex_index(&graph, "Lucknow"), 6700);
+    add_edge(&graph, find_vertex_index(&graph, "Bangalore"), find_vertex_index(&graph, "Hyderabad"), 3300);
+    add_edge(&graph, find_vertex_index(&graph, "Bangalore"), find_vertex_index(&graph, "Kolkata"), 6300);
+    add_edge(&graph, find_vertex_index(&graph, "Bangalore"), find_vertex_index(&graph, "Chennai"), 2100);
+    add_edge(&graph, find_vertex_index(&graph, "Hyderabad"), find_vertex_index(&graph, "Bangalore"), 3300);
+    add_edge(&graph, find_vertex_index(&graph, "Hyderabad"), find_vertex_index(&graph, "Chennai"), 2300);
+    add_edge(&graph, find_vertex_index(&graph, "Chennai"), find_vertex_index(&graph, "Bangalore"), 2600);
+    add_edge(&graph, find_vertex_index(&graph, "Chennai"), find_vertex_index(&graph, "Mumbai"), 4100);
+    add_edge(&graph, find_vertex_index(&graph, "Chennai"), find_vertex_index(&graph, "Hyderabad"), 2900);
+    add_edge(&graph, find_vertex_index(&graph, "Chennai"), find_vertex_index(&graph, "Guwahati"), 8100);
+    add_edge(&graph, find_vertex_index(&graph, "Lucknow"), find_vertex_index(&graph, "Kolkata"), 5400);
+    add_edge(&graph, find_vertex_index(&graph, "Lucknow"), find_vertex_index(&graph, "Dehradun"), 4300);
+    add_edge(&graph, find_vertex_index(&graph, "Lucknow"), find_vertex_index(&graph, "Delhi"), 4800);
+    add_edge(&graph, find_vertex_index(&graph, "Lucknow"), find_vertex_index(&graph, "Bangalore"), 9300);
+    add_edge(&graph, find_vertex_index(&graph, "Lucknow"), find_vertex_index(&graph, "Chennai"), 11100);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Dehradun"), 7200);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Lucknow"), 7800);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Mumbai"), 6000);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Hyderabad"), 7500);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Bangalore"), 9300);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Chennai"), 8700);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Darbhanga"), 6300);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Delhi"), 5500);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Guwahati"), 4300);
+    add_edge(&graph, find_vertex_index(&graph, "Kolkata"), find_vertex_index(&graph, "Imphal"), 3500);
+    
+    add_edge(&graph, find_vertex_index(&graph, "Guwahati"), find_vertex_index(&graph, "Imphal"), 2800);
+    add_edge(&graph, find_vertex_index(&graph, "Guwahati"), find_vertex_index(&graph, "Delhi"), 6400);
+    add_edge(&graph, find_vertex_index(&graph, "Guwahati"), find_vertex_index(&graph, "Kolkata"), 4300);
+    add_edge(&graph, find_vertex_index(&graph, "Guwahati"), find_vertex_index(&graph, "Bangalore"), 13300);
+    add_edge(&graph, find_vertex_index(&graph, "Guwahati"), find_vertex_index(&graph, "Chennai"), 18600);
+    
+    add_edge(&graph, find_vertex_index(&graph, "Dehradun"), find_vertex_index(&graph, "Delhi"), 3000);
+    add_edge(&graph, find_vertex_index(&graph, "Dehradun"), find_vertex_index(&graph, "Ahemdabad"), 10200);
+    add_edge(&graph, find_vertex_index(&graph, "Dehradun"), find_vertex_index(&graph, "Mumbai"), 8000);
+    add_edge(&graph, find_vertex_index(&graph, "Dehradun"), find_vertex_index(&graph, "Lucknow"), 4500);
+    add_edge(&graph, find_vertex_index(&graph, "Dehradun"), find_vertex_index(&graph, "Kolkata"), 7700);
+    add_edge(&graph, find_vertex_index(&graph, "Imphal"), find_vertex_index(&graph, "Delhi"), 9600);
+    add_edge(&graph, find_vertex_index(&graph, "Imphal"), find_vertex_index(&graph, "Guwahati"), 3200);
+    add_edge(&graph, find_vertex_index(&graph, "Imphal"), find_vertex_index(&graph, "Kolkata"), 4500);
+    add_edge(&graph, find_vertex_index(&graph, "Darbhanga"), find_vertex_index(&graph, "Kolkata"), 11500);
+  
+  
+    // Find cheapest path
+    int start_vertex = find_vertex_index(&graph, "Jammu");//start location
+    int end_vertex = find_vertex_index(&graph, "Bangalore");//final destination
+    int prices[MAX_VERTICES];
+    int predecessors[MAX_VERTICES];
+    dijkstra(&graph, start_vertex, prices, predecessors);
+    int fare = calculate_fare(&graph, start_vertex, end_vertex, predecessors);
+    
+        printf("Cheapest path from %s to %s: \t", graph.vertices[start_vertex].name, graph.vertices[end_vertex].name);
+    print_cheapest_path(&graph, start_vertex, end_vertex, predecessors);
+    printf("\twhich costs: %d", fare);
+
+
+    return 0;
+}
